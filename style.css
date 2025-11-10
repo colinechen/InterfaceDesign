@@ -1,0 +1,89 @@
+/* === Grundlayout === */
+body {
+  font-family: "Helvetica Neue", sans-serif;
+  background-color: #f7f7f7;
+  color: #111;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  transition: background 0.5s ease;
+}
+
+h1 {
+  font-weight: 600;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  letter-spacing: 0.5px;
+}
+
+/* === Texteingabe === */
+textarea {
+  width: 80%;
+  max-width: 400px;
+  height: 100px;
+  padding: 10px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  resize: none;
+  transition: border-color 0.3s, background 0.3s;
+}
+
+/* === Alert Box === */
+.alert {
+  margin-top: 25px;
+  font-size: 1.6rem;       /* größerer Text */
+  font-weight: 700;        /* fett */
+  text-align: center;
+  opacity: 0;
+  letter-spacing: 0.5px;
+  transition: opacity 0.4s, transform 0.3s;
+}
+
+/* Sichtbare Alerts */
+.show {
+  opacity: 1;
+  transform: scale(1.05);  /* leichtes Einblenden */
+}
+
+/* === Farbvarianten === */
+.soft {
+  color: #f39c12; /* orange */
+}
+
+.medium {
+  color: #e74c3c; /* rot */
+}
+
+/* Stärkste Warnung: Rote Box mit Text */
+.strong {
+  color: white;
+  background: #e74c3c;
+  padding: 25px;
+  border-radius: 12px;
+  width: 80%;
+  max-width: 400px;
+  box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+}
+
+/* === Extra: sanfte Puls-Animation für Countdown === */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.medium.show,
+.strong.show {
+  animation: pulse 1s infinite;
+}
