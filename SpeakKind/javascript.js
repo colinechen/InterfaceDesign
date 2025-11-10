@@ -7,7 +7,7 @@ document.querySelectorAll(".send-btn").forEach(button => {
 
     const hateWords = ["dumm", "idiot", "hass", "behindert", "blöd"];
     const mediumWords = ["nervig", "scheiße", "freak", "abschaum"];
-    const strongWords = ["töten", "hasse dich", "Bitch", "Hurensohn", "fick dich"];
+    const strongWords = ["töten", "hasse dich", "bitch", "hurensohn", "fick dich"];
 
     if (strongWords.some(w => comment.includes(w))) {
       showAlert(alertBox, "strong", "Stopp! Diese Sprache verletzt. Schreibpause 60s.", input, 60);
