@@ -6,7 +6,7 @@ document.querySelectorAll(".send-btn").forEach(button => {
     const comment = input.value.trim().toLowerCase();
 
     const hateWords = ["dumm", "idiot", "hass", "behindert", "blöd"];
-    const mediumWords = ["nervig", "scheiße", "freak", "abschaum", "arsch", "Opfer"];
+    const mediumWords = ["nervig", "scheiße", "freak", "abschaum", "arsch", "opfer"];
     const strongWords = ["töten", "hasse dich", "bitch", "hurensohn", "fick dich", "kys", "kill yourself"];
 
     if (strongWords.some(w => comment.includes(w))) {
