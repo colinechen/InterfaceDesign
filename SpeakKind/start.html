@@ -1,79 +1,177 @@
+<!-- start.html -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SpeakKind – Anti Hate Speech Feed</title>
-  <link rel="stylesheet" href="styling.css">
+  <link rel="stylesheet" href="styling.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
   <header class="insta-header">
-    <div class="header-content">
-      <h1>SpeakKind</h1>
-      <div class="header-icons">
-        <i class="fa-regular fa-heart"></i>
-        <i class="fa-regular fa-comment"></i>
-        <i class="fa-regular fa-paper-plane"></i>
+    <div class="header-top">
+      <div class="header-left">
+        <button id="logo-btn" class="logo-btn" aria-label="Startseite">
+          <h1>SpeakKind</h1>
+        </button>
+      </div>
+
+      <div class="header-center" id="stories">
+        <!-- Stories bubbles (dummy) -->
+      </div>
+
+      <div class="header-right">
+        <div class="strike-indicator" title="Strikes">
+          <!-- Keep original id for any existing code, add class for JS compatibility -->
+          <span id="strike-badge" class="strike-count">0 / 0</span>
+        </div>
+        <button id="profile-btn" class="profile-icon" aria-label="Profil ansehen">
+          <img src="trump.jpg" alt="Dein Profilbild">
+        </button>
       </div>
     </div>
+    <nav class="header-nav">
+      <div class="header-icons">
+        <i class="fa-regular fa-heart" title="Gefällt mir"></i>
+        <i class="fa-regular fa-comment" title="Kommentare"></i>
+        <i class="fa-regular fa-paper-plane" title="Teilen"></i>
+      </div>
+    </nav>
   </header>
 
   <main>
-    <section class="post">
+    <section class="post" data-post-id="1">
       <div class="post-header">
         <img class="profile-pic" src="trump.jpg" alt="Profilbild">
-        <p class="username">PoorlyEducated</p>
+        <div class="post-head-meta">
+          <p class="username">PoorlyEducated</p>
+          <p class="location">Berlin</p>
+        </div>
+      </div>
+
+      <div class="post-image-wrap">
+        <img src="trump.jpg" alt="Beispielbild" class="post-image">
       </div>
 
       <div class="post-content">
-        <img src="trump.jpg" alt="Beispielbild" class="post-image">
         <p><strong>PoorlyEducated</strong> Ich liebe diesen Typen! ☀️</p>
       </div>
 
       <div class="post-actions">
-        <button class="like-btn"><i class="fa-regular fa-heart"></i></button>
-        <button class="comment-btn"><i class="fa-regular fa-comment"></i></button>
-        <button class="share-btn"><i class="fa-regular fa-paper-plane"></i></button>
+        <button class="like-btn" aria-label="Gefällt mir"><i class="fa-regular fa-heart"></i></button>
+        <button class="comment-btn" aria-label="Kommentar"><i class="fa-regular fa-comment"></i></button>
+        <button class="share-btn" aria-label="Teilen"><i class="fa-regular fa-paper-plane"></i></button>
       </div>
 
-      <div class="likes-count">Gefällt 12 Mal</div>
+      <div class="likes-count">Gefällt <span class="likes-number">12</span> Mal</div>
 
       <div class="comment-section">
-        <div class="comments"></div>
-        <textarea class="comment-input" placeholder="Kommentiere etwas…"></textarea>
-        <button class="send-btn">Senden</button>
-        <div class="alert"></div>
+        <div class="comments" aria-live="polite"></div>
+        <textarea class="comment-input" placeholder="Kommentiere etwas…" rows="2"></textarea>
+        <div class="comment-controls">
+          <button class="send-btn">Senden</button>
+          <div class="hint">Drücke Senden, um zu posten</div>
+        </div>
+        <!-- empty alert — JS will populate content and optionally add 'Warum?'-Button -->
+        <div class="alert" aria-live="polite"></div>
       </div>
     </section>
 
-    <section class="post">
+    <section class="post" data-post-id="2">
       <div class="post-header">
         <img class="profile-pic" src="trump.jpg" alt="Profilbild">
-        <p class="username">cheeselover</p>
+        <div class="post-head-meta">
+          <p class="username">cheeselover</p>
+          <p class="location">Hamburg</p>
+        </div>
+      </div>
+
+      <div class="post-image-wrap">
+        <img src="norris.jpg" alt="Beispielbild" class="post-image">
       </div>
 
       <div class="post-content">
-        <img src="norris.jpg" alt="Beispielbild" class="post-image">
         <p><strong>cheeselover</strong> Katzensuppe schmeckt voll gut 😅</p>
       </div>
 
       <div class="post-actions">
-        <button class="like-btn"><i class="fa-regular fa-heart"></i></button>
-        <button class="comment-btn"><i class="fa-regular fa-comment"></i></button>
-        <button class="share-btn"><i class="fa-regular fa-paper-plane"></i></button>
+        <button class="like-btn" aria-label="Gefällt mir"><i class="fa-regular fa-heart"></i></button>
+        <button class="comment-btn" aria-label="Kommentar"><i class="fa-regular fa-comment"></i></button>
+        <button class="share-btn" aria-label="Teilen"><i class="fa-regular fa-paper-plane"></i></button>
       </div>
 
-      <div class="likes-count">Gefällt 37 Mal</div>
+      <div class="likes-count">Gefällt <span class="likes-number">37</span> Mal</div>
 
       <div class="comment-section">
-        <div class="comments"></div>
-        <textarea class="comment-input" placeholder="Kommentiere etwas…"></textarea>
-        <button class="send-btn">Senden</button>
-        <div class="alert"></div>
+        <div class="comments" aria-live="polite"></div>
+        <textarea class="comment-input" placeholder="Kommentiere etwas…" rows="2"></textarea>
+        <div class="comment-controls">
+          <button class="send-btn">Senden</button>
+          <div class="hint">Drücke Senden, um zu posten</div>
+        </div>
+        <div class="alert" aria-live="polite"></div>
       </div>
     </section>
   </main>
+
+  <!-- Profile Modal (statisch) -->
+  <div id="profile-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+    <div class="modal-card">
+      <button class="close-modal" id="close-profile" aria-label="Schließen">&times;</button>
+      <div class="profile-top">
+        <img class="profile-large" src="trump.jpg" alt="Profilbild groß">
+        <div class="profile-info">
+          <h2 id="profile-title">dein_profil</h2>
+          <p class="profile-bio">Interface Design Student · SpeakKind Prototype</p>
+          <div class="profile-stats">
+            <div><strong>24</strong><span>Beiträge</span></div>
+            <div><strong>128</strong><span>Follower</span></div>
+            <div><strong>190</strong><span>Folgt</span></div>
+          </div>
+          <button id="logout-demo" class="btn-secondary">Abmelden (Demo)</button>
+        </div>
+      </div>
+
+      <div class="gallery">
+        <!-- 9 Dummy bilder -->
+        <div class="grid">
+          <div class="grid-item"></div><div class="grid-item"></div><div class="grid-item"></div>
+          <div class="grid-item"></div><div class="grid-item"></div><div class="grid-item"></div>
+          <div class="grid-item"></div><div class="grid-item"></div><div class="grid-item"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock overlay -->
+  <div id="lock-overlay" class="overlay hidden" role="alertdialog" aria-hidden="true">
+    <div class="overlay-card">
+      <h3>Konto temporär gesperrt</h3>
+      <p id="lock-reason">Dein Konto wurde aufgrund wiederholter Verstöße gesperrt.</p>
+      <p class="small">Dies ist eine Demo – in einer echten Anwendung würde die Sperre serverseitig verwaltet.</p>
+      <div class="overlay-actions">
+        <button id="reset-strikes" class="btn-reset">Demo: Strikes zurücksetzen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ressourcen Modal (used for "Warum?") -->
+  <div id="resource-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="resource-title">
+    <div class="modal-card small">
+      <button class="close-modal" id="close-resource" aria-label="Schließen">&times;</button>
+      <h3 id="resource-title">Warum ist das problematisch?</h3>
+      <div id="resource-body">
+        <p>Hier findest du kurze Erklärungen und Links, die zeigen, weshalb bestimmte Ausdrücke verletzend sind:</p>
+        <ul>
+          <li><a href="https://hateaid.org/" target="_blank" rel="noopener">HateAid – Hilfe bei Hass im Netz</a></li>
+          <li><a href="https://www.bpb.de/" target="_blank" rel="noopener">Bundeszentrale für politische Bildung</a></li>
+          <li><a href="https://www.amnesty.de/" target="_blank" rel="noopener">Amnesty International – Warum Sprache schadet</a></li>
+          <li><a href="https://www.un.org/en" target="_blank" rel="noopener">UN – Menschenwürde und Diskriminierung</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
 
   <script src="javascript.js"></script>
 </body>
