@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SpeakKind – Anti Hate Speech Feed</title>
-  <link rel="stylesheet" href="styling.css" />
+  <link rel="stylesheet" href="styling.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -31,13 +31,7 @@
         </button>
       </div>
     </div>
-    <nav class="header-nav">
-      <div class="header-icons">
-        <i class="fa-regular fa-heart" title="Gefällt mir"></i>
-        <i class="fa-regular fa-comment" title="Kommentare"></i>
-        <i class="fa-regular fa-paper-plane" title="Teilen"></i>
-      </div>
-    </nav>
+    
   </header>
 
   <main>
@@ -66,7 +60,7 @@
 
       <div class="likes-count">Gefällt <span class="likes-number">12</span> Mal</div>
 
-      <div class="comment-section">
+      <div class="comment-section hidden">
         <div class="comments" aria-live="polite"></div>
         <textarea class="comment-input" placeholder="Kommentiere etwas…" rows="2"></textarea>
         <div class="comment-controls">
@@ -103,7 +97,7 @@
 
       <div class="likes-count">Gefällt <span class="likes-number">37</span> Mal</div>
 
-      <div class="comment-section">
+      <div class="comment-section hidden">
         <div class="comments" aria-live="polite"></div>
         <textarea class="comment-input" placeholder="Kommentiere etwas…" rows="2"></textarea>
         <div class="comment-controls">
@@ -172,6 +166,46 @@
       </div>
     </div>
   </div>
+
+  <!-- Share Overlay -->
+<div id="share-overlay" class="overlay hidden" role="dialog" aria-modal="true">
+  <div class="overlay-card share-card">
+    <div class="share-header">
+      <h3>Teilen</h3>
+      <button id="close-share" class="close-modal" aria-label="Schließen">&times;</button>
+    </div>
+
+    <!-- Dummy Stories / Nutzer -->
+    <div class="share-users">
+      <div class="share-user">
+        <img src="trump.jpg" alt="">
+        <span>@anna</span>
+      </div>
+      <div class="share-user">
+        <img src="norris.jpg" alt="">
+        <span>@max</span>
+      </div>
+      <div class="share-user">
+        <img src="trump.jpg" alt="">
+        <span>@lena</span>
+      </div>
+      <div class="share-user">
+        <img src="norris.jpg" alt="">
+        <span>@tom</span>
+      </div>
+    </div>
+
+    <!-- Message input -->
+    <textarea
+      id="share-message"
+      placeholder="Nachricht hinzufügen…"
+      rows="2"
+    ></textarea>
+
+    <button id="send-share" class="btn-primary">Senden</button>
+  </div>
+</div>
+
 
   <script src="javascript.js"></script>
 </body>
