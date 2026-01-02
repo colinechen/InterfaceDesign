@@ -27,6 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
     "nichtsnutz", "kys", "kill yourself"
   ];
 
+  const MODERATION_API = "https://speakkind.lucahemmi007.workers.dev";
+
+
+
   // ===============================
   // STATE
   // ===============================
@@ -213,10 +217,67 @@ document.addEventListener("DOMContentLoaded", () => {
     lockOverlay.classList.toggle("hidden", !show);
   }
 
+  async function moderateWithAI(text) {
+    try {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 6000);
+
+      const res = await fetch(MODERATION_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+        signal: controller.signal
+      });
+
+      if (!res.ok) {
+        throw new Error("AI request failed");
+      }
+
+      const data = await res.json();
+      const result = data.results?.[0];
+
+      console.groupCollapsed("KI Moderationsergebnis");
+      console.log("Eingabe:", text);
+      console.log("Kategorien:", result.categories);
+      console.log("Flags:", result.flagged);
+      console.groupEnd();
+
+
+      if (!result) return { level: "none" };
+
+      const c = result.categories;
+
+      if (c.violence || c.threat || c.self_harm) {
+        return { level: "strong", raw: result };
+      }
+
+      if (
+        c.harassment ||
+        c.harassment_threatening ||
+        c.hate ||
+        c.hate_threatening
+      ) {
+        return { level: "medium", raw: result };
+      }
+
+      if (c.sexual || c.profanity) {
+        return { level: "soft", raw: result };
+      }
+
+      return { level: "none", raw: result };
+
+    } catch (e) {
+      console.warn("AI moderation unavailable, fallback active");
+      return { level: "fallback" };
+    }
+  }
+
+
+
   // ===============================
   // SEND HANDLER
   // ===============================
-  function handleSendClick(button) {
+  async function handleSendClick(button) {
     const post = button.closest(".post");
     if (!post) return;
 
@@ -227,6 +288,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const raw = input.value.trim();
     const text = raw.toLowerCase();
+    button.disabled = true;
+    button.textContent = "Prüfe…";
+
+    const aiResult = await moderateWithAI(raw);
+
+    button.disabled = false;
+    button.textContent = "Senden";
+
+    if (aiResult.level === "strong") {
+      strikeCount++;
+      updateStrikeDisplay();
+      shake(input);
+      showAlertInBox(alertBox, "Stopp! Gewaltvolle Sprache (KI erkannt).", true, section, raw, 60, "strong");
+      disableTemporarily(button, input, 60000);
+      checkForLock("strong");
+      input.value = "";
+      return;
+    }
+
+    if (aiResult.level === "medium") {
+      strikeCount++;
+      updateStrikeDisplay();
+      showAlertInBox(alertBox, "Bitte respektvoll bleiben (KI erkannt).", true, section, raw, 20, "medium");
+      disableTemporarily(button, input, 20000);
+      checkForLock("medium");
+      input.value = "";
+      return;
+    }
+
+    if (aiResult.level === "soft") {
+      showAlertInBox(alertBox, "Willst du das wirklich so sagen?", true, section, raw, 0, "soft");
+      disableTemporarily(button, input, 2500);
+      return;
+    }
+
+
+
     if (!raw) return;
 
     if (isLocked) {
