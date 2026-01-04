@@ -210,6 +210,20 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll(".comment-input, .send-btn")
         .forEach(el => el.disabled = true);
     }
+
+    if (strikeCount >= MAX_STRIKES) {
+      // Share Overlay ebenfalls sperren
+      if (shareMessageInput) {
+        shareMessageInput.disabled = true;
+        shareMessageInput.placeholder = "Konto gesperrt (Demo)";
+      }
+
+      if (sendShareBtn) {
+        sendShareBtn.disabled = true;
+        sendShareBtn.textContent = "Gesperrt";
+      }
+    }
+
   }
 
   function toggleLockOverlay(show) {
@@ -471,26 +485,168 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // ===============================
-  // SHARE OVERLAY
+  // SHARE OVERLAY (FINAL)
   // ===============================
   const shareOverlay = document.getElementById("share-overlay");
   const closeShareBtn = document.getElementById("close-share");
   const sendShareBtn = document.getElementById("send-share");
   const shareMessageInput = document.getElementById("share-message");
+  const shareAlert = document.getElementById("share-alert");
 
+  let selectedShareUser = null;
+
+  // -------------------------------
+  // USER SELECTION
+  // -------------------------------
+  document.querySelectorAll(".share-user").forEach(user => {
+    user.addEventListener("click", () => {
+      document.querySelectorAll(".share-user")
+        .forEach(u => u.classList.remove("selected"));
+
+      user.classList.add("selected");
+      selectedShareUser = user.dataset.user;
+    });
+  });
+
+  // -------------------------------
+  // OPEN OVERLAY
+  // -------------------------------
   document.querySelectorAll(".share-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       toggleModal(shareOverlay, true);
+
       shareMessageInput.value = "";
+      shareAlert.style.display = "none";
+      selectedShareUser = null;
+
+      document.querySelectorAll(".share-user")
+        .forEach(u => u.classList.remove("selected"));
+
       shareMessageInput.focus();
     });
   });
 
-  if (closeShareBtn) {
-    closeShareBtn.addEventListener("click", () => {
+  // -------------------------------
+  // CLOSE OVERLAY
+  // -------------------------------
+  closeShareBtn.addEventListener("click", () => {
+    toggleModal(shareOverlay, false);
+  });
+
+  shareOverlay.addEventListener("click", e => {
+    if (e.target === shareOverlay) {
       toggleModal(shareOverlay, false);
-    });
-  }
+    }
+  });
+
+  // -------------------------------
+  // SEND MESSAGE
+  // -------------------------------
+  sendShareBtn.addEventListener("click", async () => {
+    const raw = shareMessageInput.value.trim();
+    if (!raw) {
+      showAlertInBox(
+        shareAlert,
+        "Bitte gib eine Nachricht ein.",
+        false
+      );
+      shareAlert.style.display = "block";
+      return;
+    }
+
+    if (!selectedShareUser) {
+      showAlertInBox(
+        shareAlert,
+        "Bitte wähle einen Empfänger aus.",
+        false
+      );
+      shareAlert.style.display = "block";
+      return;
+    }
+
+
+    sendShareBtn.disabled = true;
+    sendShareBtn.textContent = "Prüfe…";
+
+    const aiResult = await moderateWithAI(raw);
+
+    sendShareBtn.disabled = false;
+    sendShareBtn.textContent = "Senden";
+
+    shareAlert.style.display = "block";
+
+    // STRONG
+    if (aiResult.level === "strong") {
+      strikeCount++;
+      updateStrikeDisplay();
+      shake(shareMessageInput);
+
+      showAlertInBox(
+        shareAlert,
+        "Stopp! Gewaltvolle Sprache (KI erkannt).",
+        true,
+        null,
+        raw,
+        60,
+        "strong"
+      );
+
+      shareMessageInput.value = "";
+      disableTemporarily(sendShareBtn, shareMessageInput, 60000);
+      checkForLock("strong");
+      return;
+    }
+
+    // MEDIUM
+    if (aiResult.level === "medium") {
+      strikeCount++;
+      updateStrikeDisplay();
+
+      showAlertInBox(
+        shareAlert,
+        "Diese Nachricht ist respektlos (KI erkannt).",
+        true,
+        null,
+        raw,
+        20,
+        "medium"
+      );
+
+      shareMessageInput.value = "";
+      disableTemporarily(sendShareBtn, shareMessageInput, 20000);
+      checkForLock("medium");
+      return;
+    }
+
+    // SOFT
+    if (aiResult.level === "soft") {
+      showAlertInBox(
+        shareAlert,
+        "Willst du das wirklich so senden?",
+        true,
+        null,
+        raw,
+        0,
+        "soft"
+      );
+      disableTemporarily(sendShareBtn, shareMessageInput, 2500);
+      return;
+    }
+
+    // OK
+    showAlertInBox(
+      shareAlert,
+      `Nachricht an @${selectedShareUser} gesendet ✔`,
+      false
+    );
+
+    shareMessageInput.value = "";
+
+    setTimeout(() => {
+      toggleModal(shareOverlay, false);
+      shareAlert.style.display = "none";
+    }, 1200);
+  });
 
 
 

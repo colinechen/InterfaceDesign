@@ -1,13 +1,15 @@
 <!-- start.html -->
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SpeakKind – Anti Hate Speech Feed</title>
-  <link rel="stylesheet" href="styling.css"/>
+  <link rel="stylesheet" href="styling.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
+
 <body>
   <header class="insta-header">
     <div class="header-top">
@@ -31,7 +33,7 @@
         </button>
       </div>
     </div>
-    
+
   </header>
 
   <main>
@@ -130,9 +132,15 @@
       <div class="gallery">
         <!-- 9 Dummy bilder -->
         <div class="grid">
-          <div class="grid-item"></div><div class="grid-item"></div><div class="grid-item"></div>
-          <div class="grid-item"></div><div class="grid-item"></div><div class="grid-item"></div>
-          <div class="grid-item"></div><div class="grid-item"></div><div class="grid-item"></div>
+          <div class="grid-item"></div>
+          <div class="grid-item"></div>
+          <div class="grid-item"></div>
+          <div class="grid-item"></div>
+          <div class="grid-item"></div>
+          <div class="grid-item"></div>
+          <div class="grid-item"></div>
+          <div class="grid-item"></div>
+          <div class="grid-item"></div>
         </div>
       </div>
     </div>
@@ -159,54 +167,59 @@
         <p>Hier findest du kurze Erklärungen und Links, die zeigen, weshalb bestimmte Ausdrücke verletzend sind:</p>
         <ul>
           <li><a href="https://hateaid.org/" target="_blank" rel="noopener">HateAid – Hilfe bei Hass im Netz</a></li>
-          <li><a href="https://www.bpb.de/" target="_blank" rel="noopener">Bundeszentrale für politische Bildung</a></li>
-          <li><a href="https://www.amnesty.de/" target="_blank" rel="noopener">Amnesty International – Warum Sprache schadet</a></li>
-          <li><a href="https://www.un.org/en" target="_blank" rel="noopener">UN – Menschenwürde und Diskriminierung</a></li>
+          <li><a href="https://www.bpb.de/" target="_blank" rel="noopener">Bundeszentrale für politische Bildung</a>
+          </li>
+          <li><a href="https://www.amnesty.de/" target="_blank" rel="noopener">Amnesty International – Warum Sprache
+              schadet</a></li>
+          <li><a href="https://www.un.org/en" target="_blank" rel="noopener">UN – Menschenwürde und Diskriminierung</a>
+          </li>
         </ul>
       </div>
     </div>
   </div>
 
   <!-- Share Overlay -->
-<div id="share-overlay" class="overlay hidden" role="dialog" aria-modal="true">
-  <div class="overlay-card share-card">
-    <div class="share-header">
-      <h3>Teilen</h3>
-      <button id="close-share" class="close-modal" aria-label="Schließen">&times;</button>
+  <div id="share-overlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="overlay-card share-card">
+      <div class="share-header">
+        <h3>Teilen</h3>
+        <button id="close-share" class="close-modal" aria-label="Schließen">&times;</button>
+      </div>
+
+      <!-- Dummy Stories / Nutzer -->
+      <div class="share-users">
+        <div class="share-user" data-user="anna" role="button" tabindex="0" aria-label="An Anna senden">
+          <img src="trump.jpg" alt="">
+          <span>@anna</span>
+        </div>
+
+        <div class="share-user" data-user="max" role="button" tabindex="0" aria-label="An Max senden">
+          <img src="norris.jpg" alt="">
+          <span>@max</span>
+        </div>
+
+        <div class="share-user" data-user="lena" role="button" tabindex="0" aria-label="An Lena senden">
+          <img src="trump.jpg" alt="">
+          <span>@lena</span>
+        </div>
+
+        <div class="share-user" data-user="tom" role="button" tabindex="0" aria-label="An Tom senden">
+          <img src="norris.jpg" alt="">
+          <span>@tom</span>
+        </div>
+      </div>
+
+
+      <!-- Message input -->
+      <textarea id="share-message" placeholder="Nachricht hinzufügen…" rows="2"></textarea>
+      <div id="share-alert" class="alert" aria-live="polite"></div>
+
+      <button id="send-share" class="btn-primary">Senden</button>
     </div>
-
-    <!-- Dummy Stories / Nutzer -->
-    <div class="share-users">
-      <div class="share-user">
-        <img src="trump.jpg" alt="">
-        <span>@anna</span>
-      </div>
-      <div class="share-user">
-        <img src="norris.jpg" alt="">
-        <span>@max</span>
-      </div>
-      <div class="share-user">
-        <img src="trump.jpg" alt="">
-        <span>@lena</span>
-      </div>
-      <div class="share-user">
-        <img src="norris.jpg" alt="">
-        <span>@tom</span>
-      </div>
-    </div>
-
-    <!-- Message input -->
-    <textarea
-      id="share-message"
-      placeholder="Nachricht hinzufügen…"
-      rows="2"
-    ></textarea>
-
-    <button id="send-share" class="btn-primary">Senden</button>
   </div>
-</div>
 
 
   <script src="javascript.js"></script>
 </body>
+
 </html>

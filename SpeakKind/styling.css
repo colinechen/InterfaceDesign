@@ -525,6 +525,19 @@ main {
   margin-top: 8px;
 }
 
+.share-user {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.share-user.selected {
+  outline: 2px solid #3897f0;
+  background: rgba(56,151,240,0.12);
+}
+
+
+
 .gallery {
   padding-top: 14px;
 }
