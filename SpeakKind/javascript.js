@@ -37,9 +37,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let strikeCount = 0;
   let isLocked = false;
   let lockEnd = 0;
+  const MAX_STRIKES = 5
 
-  const MEDIUM_THRESHOLD = 10;
-  const STRONG_THRESHOLD = 3;
+  //  const MEDIUM_THRESHOLD = 10;
+  //  const STRONG_THRESHOLD = 3;
 
   // ===============================
   // DOM
@@ -50,6 +51,42 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeResourceBtn = document.getElementById("close-resource");
   const lockOverlay = document.getElementById("lock-overlay");
   const resetStrikesBtn = document.getElementById("reset-strikes");
+
+  // ===============================
+  // AUDIO
+  // ===============================
+  let audioUnlocked = false;
+
+  const sounds = {
+    block: new Audio("sounds/block-higher.mp3"),
+    locked: new Audio("sounds/block-lower.mp3")
+  };
+
+  // Lautstärke
+  sounds.block.volume = 0.6;
+  sounds.locked.volume = 0.7;
+
+  // Unlock on first user interaction
+  document.addEventListener("click", () => {
+    if (audioUnlocked) return;
+
+    Object.values(sounds).forEach(a => {
+      a.play().then(() => {
+        a.pause();
+        a.currentTime = 0;
+      }).catch(() => { });
+    });
+
+    audioUnlocked = true;
+    console.log("🔓 Audio unlocked");
+  }, { once: true });
+
+  function playSound(audio) {
+    if (!audioUnlocked || !audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => { });
+  }
+
 
   // ===============================
   // STRIKE DISPLAY
@@ -198,33 +235,34 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   // LOCK LOGIC
   // ===============================
-  function checkForLock(level) {
-    if (
-      (level === "strong" && strikeCount >= STRONG_THRESHOLD) ||
-      (level === "medium" && strikeCount >= MEDIUM_THRESHOLD)
-    ) {
-      isLocked = true;
-      lockEnd = Date.now() + 8000;
+  function checkForLock() {
+    if (strikeCount < MAX_STRIKES || isLocked) return;
 
-      toggleLockOverlay(true);
-      document.querySelectorAll(".comment-input, .send-btn")
-        .forEach(el => el.disabled = true);
+    isLocked = true;
+
+    // Overlay anzeigen
+    toggleLockOverlay(true);
+
+    // Sounds
+    playSound(sounds.locked);
+
+    // Alle Kommentar-Eingaben sperren
+    document.querySelectorAll(".comment-input, .send-btn").forEach(el => {
+      el.disabled = true;
+    });
+
+    // Share Overlay sperren
+    if (shareMessageInput) {
+      shareMessageInput.disabled = true;
+      shareMessageInput.placeholder = "Konto gesperrt (Demo)";
     }
 
-    if (strikeCount >= MAX_STRIKES) {
-      // Share Overlay ebenfalls sperren
-      if (shareMessageInput) {
-        shareMessageInput.disabled = true;
-        shareMessageInput.placeholder = "Konto gesperrt (Demo)";
-      }
-
-      if (sendShareBtn) {
-        sendShareBtn.disabled = true;
-        sendShareBtn.textContent = "Gesperrt";
-      }
+    if (sendShareBtn) {
+      sendShareBtn.disabled = true;
+      sendShareBtn.textContent = "Gesperrt";
     }
-
   }
+
 
   function toggleLockOverlay(show) {
     if (!lockOverlay) return;
@@ -309,24 +347,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     button.disabled = false;
     button.textContent = "Senden";
-
     if (aiResult.level === "strong") {
+      playSound(sounds.block);
       strikeCount++;
       updateStrikeDisplay();
       shake(input);
-      showAlertInBox(alertBox, "Stopp! Gewaltvolle Sprache (KI erkannt).", true, section, raw, 60, "strong");
+
+      showAlertInBox(
+        alertBox,
+        "Stopp! Gewaltvolle Sprache (KI erkannt).",
+        true,
+        section,
+        raw,
+        60,
+        "strong"
+      );
+
       disableTemporarily(button, input, 60000);
-      checkForLock("strong");
+      checkForLock();
       input.value = "";
       return;
     }
+
 
     if (aiResult.level === "medium") {
       strikeCount++;
       updateStrikeDisplay();
       showAlertInBox(alertBox, "Bitte respektvoll bleiben (KI erkannt).", true, section, raw, 20, "medium");
       disableTemporarily(button, input, 20000);
-      checkForLock("medium");
+      checkForLock();
       input.value = "";
       return;
     }
@@ -354,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
       shake(input);
       showAlertInBox(alertBox, "Stopp! Gewaltvolle Sprache.", true, section, raw, 60, "strong");
       disableTemporarily(button, input, 60000);
-      checkForLock("strong");
+      checkForLock();
       return;
     }
 
@@ -364,7 +413,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updateStrikeDisplay();
       showAlertInBox(alertBox, "Bitte respektvoll bleiben.", true, section, raw, 20, "medium");
       disableTemporarily(button, input, 20000);
-      checkForLock("medium");
+      checkForLock();
       return;
     }
 
@@ -580,7 +629,7 @@ document.addEventListener("DOMContentLoaded", () => {
       strikeCount++;
       updateStrikeDisplay();
       shake(shareMessageInput);
-
+      playSound(sounds.block);
       showAlertInBox(
         shareAlert,
         "Stopp! Gewaltvolle Sprache (KI erkannt).",
