@@ -55,11 +55,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   // AUDIO
   // ===============================
-  let audioUnlocked = false;
+
 
   const sounds = {
-    block: new Audio("sounds/block-higher.mp3"),
-    locked: new Audio("sounds/block-lower.mp3")
+    block: new Audio("sounds/denied.mp3"),
+    locked: new Audio("sounds/alarm.mp3")
   };
 
   // Lautstärke
@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Unlock on first user interaction
   document.addEventListener("click", () => {
-    if (audioUnlocked) return;
+
 
     Object.values(sounds).forEach(a => {
       a.play().then(() => {
@@ -77,12 +77,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }).catch(() => { });
     });
 
-    audioUnlocked = true;
+
     console.log("🔓 Audio unlocked");
   }, { once: true });
 
   function playSound(audio) {
-    if (!audioUnlocked || !audio) return;
+    if (!audio) return;
     audio.currentTime = 0;
     audio.play().catch(() => { });
   }
@@ -372,6 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (aiResult.level === "medium") {
       strikeCount++;
+      playSound(sounds.block);
       updateStrikeDisplay();
       showAlertInBox(alertBox, "Bitte respektvoll bleiben (KI erkannt).", true, section, raw, 20, "medium");
       disableTemporarily(button, input, 20000);
@@ -381,6 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (aiResult.level === "soft") {
+      playSound(sounds.block);
       showAlertInBox(alertBox, "Willst du das wirklich so sagen?", true, section, raw, 0, "soft");
       disableTemporarily(button, input, 2500);
       return;
