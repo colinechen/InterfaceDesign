@@ -1,146 +1,153 @@
 document.addEventListener("DOMContentLoaded", () => {
-
   // ===============================
   // UTILITIES
   // ===============================
-  function escapeHtml(text) {
-    return text
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+  const escapeHtml = text => text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
-  function matchesAny(list, text) {
-    return list.some(w => text.includes(w));
-  }
+  const matchesAny = (list, text) => list.some(w => text.includes(w));
 
   // ===============================
-  // WORD LISTS
+  // CONSTANTS
   // ===============================
-  const hateWords = ["dumm", "idiot", "hass", "behindert", "blöd"];
-  const mediumWords = ["nervig", "scheiße", "freak", "abschaum", "arsch", "opfer"];
-  const strongWords = [
+  const HATE_WORDS = ["dumm", "idiot", "hass", "behindert", "blöd"];
+  const MEDIUM_WORDS = ["nervig", "scheiße", "freak", "abschaum", "arsch", "opfer"];
+  const STRONG_WORDS = [
     "töten", "hasse dich", "bitch", "hurensohn",
     "fick dich", "bring dich um", "versager",
     "nichtsnutz", "kys", "kill yourself"
   ];
 
   const MODERATION_API = "https://speakkind.lucahemmi007.workers.dev";
+  const MAX_STRIKES = 5;
 
-
+  const TIMEOUT_DURATIONS = {
+    strong: 60000,
+    medium: 20000,
+    soft: 2500
+  };
 
   // ===============================
   // STATE
   // ===============================
   let strikeCount = 0;
   let isLocked = false;
-  let lockEnd = 0;
-  const MAX_STRIKES = 5
-
-  //  const MEDIUM_THRESHOLD = 10;
-  //  const STRONG_THRESHOLD = 3;
 
   // ===============================
-  // DOM
+  // DOM CACHE
   // ===============================
-  const strikeBadge = document.getElementById("strike-badge");
-  const resourceModal = document.getElementById("resource-modal");
-  const resourceBody = document.getElementById("resource-body");
-  const closeResourceBtn = document.getElementById("close-resource");
-  const lockOverlay = document.getElementById("lock-overlay");
-  const resetStrikesBtn = document.getElementById("reset-strikes");
+  const dom = {
+    strikeBadge: document.getElementById("strike-badge"),
+    resourceModal: document.getElementById("resource-modal"),
+    resourceBody: document.getElementById("resource-body"),
+    closeResourceBtn: document.getElementById("close-resource"),
+    lockOverlay: document.getElementById("lock-overlay"),
+    resetStrikesBtn: document.getElementById("reset-strikes"),
+    shareOverlay: document.getElementById("share-overlay"),
+    closeShareBtn: document.getElementById("close-share"),
+    sendShareBtn: document.getElementById("send-share"),
+    shareMessageInput: document.getElementById("share-message"),
+    shareAlert: document.getElementById("share-alert")
+  };
 
   // ===============================
   // AUDIO
   // ===============================
-
-
   const sounds = {
     block: new Audio("sounds/denied.mp3"),
     locked: new Audio("sounds/alarm.mp3")
   };
 
-  // Lautstärke
   sounds.block.volume = 0.6;
   sounds.locked.volume = 0.7;
 
-  // Unlock on first user interaction
+  // Audio unlock (einmal)
   document.addEventListener("click", () => {
-
-
     Object.values(sounds).forEach(a => {
       a.play().then(() => {
         a.pause();
         a.currentTime = 0;
       }).catch(() => { });
     });
-
-
-    console.log("🔓 Audio unlocked");
   }, { once: true });
 
-  function playSound(audio) {
+  const playSound = audio => {
     if (!audio) return;
     audio.currentTime = 0;
     audio.play().catch(() => { });
-  }
+  };
 
+  // ===============================
+  // ANIMATIONS
+  // ===============================
+  const animations = {
+    pulse: [
+      { transform: "scale(1)" },
+      { transform: "scale(1.08)" },
+      { transform: "scale(1)" }
+    ],
+    shake: [
+      { transform: "translateX(0)" },
+      { transform: "translateX(-6px)" },
+      { transform: "translateX(6px)" },
+      { transform: "translateX(-4px)" },
+      { transform: "translateX(4px)" },
+      { transform: "translateX(0)" }
+    ],
+    fadeInUp: [
+      { opacity: 0, transform: "translateY(6px)" },
+      { opacity: 1, transform: "translateY(0)" }
+    ],
+    fadeInDown: [
+      { opacity: 0, transform: "translateY(-6px)" },
+      { opacity: 1, transform: "translateY(0)" }
+    ],
+    fadeOut: [
+      { opacity: 1 },
+      { opacity: 0 }
+    ]
+  };
+
+  const animate = (el, keyframes, duration = 300) => {
+    if (!el) return;
+    el.animate(keyframes, { duration, easing: "ease-out" });
+  };
 
   // ===============================
   // STRIKE DISPLAY
   // ===============================
-  function updateStrikeDisplay() {
-    if (!strikeBadge) return;
-
-    strikeBadge.textContent = `Strikes: ${strikeCount}`;
-    strikeBadge.style.display = "inline-block";
-
-    requestAnimationFrame(() => {
-      strikeBadge.animate(
-        [
-          { transform: "scale(1)" },
-          { transform: "scale(1.08)" },
-          { transform: "scale(1)" }
-        ],
-        { duration: 380, easing: "ease-out" }
-      );
-    });
-  }
+  const updateStrikeDisplay = () => {
+    if (!dom.strikeBadge) return;
+    dom.strikeBadge.textContent = `Strikes: ${strikeCount}`;
+    dom.strikeBadge.style.display = "inline-block";
+    requestAnimationFrame(() => animate(dom.strikeBadge, animations.pulse, 380));
+  };
 
   // ===============================
-  // SMALL HELPERS
+  // UI HELPERS
   // ===============================
-  function shake(el) {
-    if (!el) return;
-    el.animate(
-      [
-        { transform: "translateX(0)" },
-        { transform: "translateX(-6px)" },
-        { transform: "translateX(6px)" },
-        { transform: "translateX(-4px)" },
-        { transform: "translateX(4px)" },
-        { transform: "translateX(0)" }
-      ],
-      { duration: 300, easing: "ease-in-out" }
-    );
-  }
-
-  function disableTemporarily(sendBtn, input, ms = 2500) {
+  const disableTemporarily = (sendBtn, input, ms) => {
     sendBtn.disabled = true;
     input.disabled = true;
-
     setTimeout(() => {
       sendBtn.disabled = false;
       input.disabled = false;
     }, ms);
-  }
+  };
+
+  const toggleModal = (modal, show) => {
+    if (!modal) return;
+    modal.classList.toggle("hidden", !show);
+  };
 
   // ===============================
-  // ALERT UI
+  // ALERT SYSTEM (ANGEPASST)
   // ===============================
-  function showAlertInBox(box, message, addWhy = false, section = null, originalText = "", timeoutSeconds = 0, level = "") {
+  const showAlertInBox = (box, message, addWhy = false, section = null, originalText = "", timeoutSeconds = 0, level = "", triggeredCategories = []) => {
     if (!box) return;
 
     box.innerHTML = "";
@@ -156,19 +163,13 @@ document.addEventListener("DOMContentLoaded", () => {
       whyBtn.className = "why-btn";
       whyBtn.textContent = "Warum?";
       whyBtn.onclick = () => {
-        populateResourceModal(level, originalText);
-        toggleModal(resourceModal, true);
+        populateResourceModal(level, originalText, triggeredCategories); // Kategorien übergeben
+        toggleModal(dom.resourceModal, true);
       };
       box.appendChild(whyBtn);
     }
 
-    box.animate(
-      [
-        { opacity: 0, transform: "translateY(-6px)" },
-        { opacity: 1, transform: "translateY(0)" }
-      ],
-      { duration: 260, easing: "ease-out" }
-    );
+    animate(box, animations.fadeInDown, 260);
 
     if (timeoutSeconds > 0 && section) {
       const input = section.querySelector(".comment-input");
@@ -192,84 +193,85 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 1000);
     } else {
       setTimeout(() => {
-        box.animate(
-          [
-            { opacity: 1 },
-            { opacity: 0 }
-          ],
-          { duration: 200 }
-        );
+        animate(box, animations.fadeOut, 200);
         setTimeout(() => box.style.display = "none", 200);
       }, 2200);
     }
-  }
+  };
 
   // ===============================
-  // RESOURCE MODAL
+  // RESOURCE MODAL (ERWEITERT)
   // ===============================
-  function populateResourceModal(level, text) {
-    if (!resourceBody) return;
+  const explanations = {
+    strong: "Gewaltvolle oder extrem beleidigende Sprache kann Menschen ernsthaft schaden.",
+    medium: "Abwertende Sprache verschlechtert das Diskussionsklima.",
+    soft: "Auch scheinbar harmlose Worte können verletzend wirken."
+  };
 
-    let explanation = {
-      strong: "Gewaltvolle oder extrem beleidigende Sprache kann Menschen ernsthaft schaden.",
-      medium: "Abwertende Sprache verschlechtert das Diskussionsklima.",
-      soft: "Auch scheinbar harmlose Worte können verletzend wirken."
-    }[level] || "";
+  // Deutsche Übersetzungen für KI-Kategorien
+  const categoryTranslations = {
+    violence: "Gewalt",
+    threat: "Bedrohung",
+    self_harm: "Selbstverletzung",
+    harassment: "Belästigung",
+    harassment_threatening: "Bedrohliche Belästigung",
+    hate: "Hassrede",
+    hate_threatening: "Bedrohliche Hassrede",
+    sexual: "Sexueller Inhalt",
+    profanity: "Vulgäre Sprache"
+  };
 
-    resourceBody.innerHTML = `
-      <p>${explanation}</p>
-      <p><strong>Kommentar:</strong> "${escapeHtml(text)}"</p>
-      <ul>
-        <li><a href="https://hateaid.org/" target="_blank">HateAid</a></li>
-        <li><a href="https://www.bpb.de/" target="_blank">bpb</a></li>
-        <li><a href="https://www.amnesty.de/" target="_blank">Amnesty</a></li>
-      </ul>
-    `;
-  }
+  const populateResourceModal = (level, text, triggeredCategories = []) => {
+    if (!dom.resourceBody) return;
 
-  function toggleModal(modal, show) {
-    if (!modal) return;
-    modal.classList.toggle("hidden", !show);
-  }
+    let categoriesHtml = "";
+    if (triggeredCategories && triggeredCategories.length > 0) {
+      const translatedCategories = triggeredCategories
+        .map(cat => categoryTranslations[cat] || cat)
+        .join(", ");
+
+      categoriesHtml = `<p><strong>Erkannte Kategorien:</strong> ${translatedCategories}</p>`;
+    }
+
+    dom.resourceBody.innerHTML = `
+    <p>${explanations[level] || ""}</p>
+    ${categoriesHtml}
+    <p><strong>Kommentar:</strong> "${escapeHtml(text)}"</p>
+    <ul>
+      <li><a href="https://hateaid.org/" target="_blank">HateAid</a></li>
+      <li><a href="https://www.bpb.de/" target="_blank">bpb</a></li>
+      <li><a href="https://www.amnesty.de/" target="_blank">Amnesty</a></li>
+    </ul>
+  `;
+  };
 
   // ===============================
   // LOCK LOGIC
   // ===============================
-  function checkForLock() {
+  const checkForLock = () => {
     if (strikeCount < MAX_STRIKES || isLocked) return;
 
     isLocked = true;
-
-    // Overlay anzeigen
-    toggleLockOverlay(true);
-
-    // Sounds
+    toggleModal(dom.lockOverlay, true);
     playSound(sounds.locked);
 
-    // Alle Kommentar-Eingaben sperren
-    document.querySelectorAll(".comment-input, .send-btn").forEach(el => {
-      el.disabled = true;
-    });
+    document.querySelectorAll(".comment-input, .send-btn").forEach(el => el.disabled = true);
 
-    // Share Overlay sperren
-    if (shareMessageInput) {
-      shareMessageInput.disabled = true;
-      shareMessageInput.placeholder = "Konto gesperrt (Demo)";
+    if (dom.shareMessageInput) {
+      dom.shareMessageInput.disabled = true;
+      dom.shareMessageInput.placeholder = "Konto gesperrt (Demo)";
     }
 
-    if (sendShareBtn) {
-      sendShareBtn.disabled = true;
-      sendShareBtn.textContent = "Gesperrt";
+    if (dom.sendShareBtn) {
+      dom.sendShareBtn.disabled = true;
+      dom.sendShareBtn.textContent = "Gesperrt";
     }
-  }
+  };
 
-
-  function toggleLockOverlay(show) {
-    if (!lockOverlay) return;
-    lockOverlay.classList.toggle("hidden", !show);
-  }
-
-  async function moderateWithAI(text) {
+  // ===============================
+  // AI MODERATION (ANGEPASST)
+  // ===============================
+  const moderateWithAI = async text => {
     try {
       const controller = new AbortController();
       setTimeout(() => controller.abort(), 6000);
@@ -281,55 +283,149 @@ document.addEventListener("DOMContentLoaded", () => {
         signal: controller.signal
       });
 
-      if (!res.ok) {
-        throw new Error("AI request failed");
-      }
+      if (!res.ok) throw new Error("AI request failed");
 
       const data = await res.json();
       const result = data.results?.[0];
 
       console.groupCollapsed("KI Moderationsergebnis");
       console.log("Eingabe:", text);
-      console.log("Kategorien:", result.categories);
-      console.log("Flags:", result.flagged);
+      console.log("Kategorien:", result?.categories);
+      console.log("Flags:", result?.flagged);
       console.groupEnd();
-
 
       if (!result) return { level: "none" };
 
       const c = result.categories;
 
+      // WICHTIG: Triggerte Kategorien speichern
+      const triggeredCategories = Object.keys(c).filter(key => c[key]);
+
       if (c.violence || c.threat || c.self_harm) {
-        return { level: "strong", raw: result };
+        return { level: "strong", raw: result, triggeredCategories };
       }
-
-      if (
-        c.harassment ||
-        c.harassment_threatening ||
-        c.hate ||
-        c.hate_threatening
-      ) {
-        return { level: "medium", raw: result };
+      if (c.harassment || c.harassment_threatening || c.hate || c.hate_threatening) {
+        return { level: "medium", raw: result, triggeredCategories };
       }
-
       if (c.sexual || c.profanity) {
-        return { level: "soft", raw: result };
+        return { level: "soft", raw: result, triggeredCategories };
       }
 
-      return { level: "none", raw: result };
+      return { level: "none", raw: result, triggeredCategories };
 
     } catch (e) {
       console.warn("AI moderation unavailable, fallback active");
       return { level: "fallback" };
     }
-  }
+  };
 
+  // ===============================
+  // MODERATION HANDLER (FIXES)
+  // ===============================
+  const handleModeration = async (raw, text, button, input, alertBox, section, comments) => {
+    button.disabled = true;
+    button.textContent = "Prüfe…";
 
+    const aiResult = await moderateWithAI(raw);
+
+    button.disabled = false;
+    button.textContent = "Senden";
+
+    // AI Moderation - STRONG
+    if (aiResult.level === "strong") {
+      playSound(sounds.block); // ✅ Sound hinzugefügt
+      strikeCount++;
+      updateStrikeDisplay();
+      animate(input, animations.shake);
+      showAlertInBox(
+        alertBox,
+        "Stopp! Gewaltvolle Sprache (KI erkannt).",
+        true,
+        section,
+        raw,
+        60,
+        "strong",
+        aiResult.triggeredCategories // ✅ Kategorien übergeben
+      );
+      disableTemporarily(button, input, TIMEOUT_DURATIONS.strong);
+      checkForLock();
+      input.value = ""; // ✅ Input leeren
+      return true;
+    }
+
+    // AI Moderation - MEDIUM
+    if (aiResult.level === "medium") {
+      strikeCount++;
+      playSound(sounds.block);
+      updateStrikeDisplay();
+      showAlertInBox(
+        alertBox,
+        "Bitte respektvoll bleiben (KI erkannt).",
+        true,
+        section,
+        raw,
+        20,
+        "medium",
+        aiResult.triggeredCategories // ✅ Kategorien übergeben
+      );
+      disableTemporarily(button, input, TIMEOUT_DURATIONS.medium);
+      checkForLock();
+      input.value = "";
+      return true;
+    }
+
+    // AI Moderation - SOFT
+    if (aiResult.level === "soft") {
+      playSound(sounds.block);
+      showAlertInBox(
+        alertBox,
+        "Willst du das wirklich so sagen?",
+        true,
+        section,
+        raw,
+        0,
+        "soft",
+        aiResult.triggeredCategories // ✅ Kategorien übergeben
+      );
+      disableTemporarily(button, input, TIMEOUT_DURATIONS.soft);
+      return true;
+    }
+
+    // Fallback to local wordlists
+    if (matchesAny(STRONG_WORDS, text)) {
+      strikeCount++;
+      updateStrikeDisplay();
+      animate(input, animations.shake);
+      showAlertInBox(alertBox, "Stopp! Gewaltvolle Sprache.", true, section, raw, 60, "strong");
+      disableTemporarily(button, input, TIMEOUT_DURATIONS.strong);
+      checkForLock();
+      input.value = ""; // ✅ Auch hier leeren
+      return true;
+    }
+
+    if (matchesAny(MEDIUM_WORDS, text)) {
+      strikeCount++;
+      updateStrikeDisplay();
+      showAlertInBox(alertBox, "Bitte respektvoll bleiben.", true, section, raw, 20, "medium");
+      disableTemporarily(button, input, TIMEOUT_DURATIONS.medium);
+      checkForLock();
+      input.value = ""; // ✅ Auch hier leeren
+      return true;
+    }
+
+    if (matchesAny(HATE_WORDS, text)) {
+      showAlertInBox(alertBox, "Willst du das wirklich so sagen?", true, section, raw, 0, "soft");
+      disableTemporarily(button, input, TIMEOUT_DURATIONS.soft);
+      return true;
+    }
+
+    return false;
+  };
 
   // ===============================
   // SEND HANDLER
   // ===============================
-  async function handleSendClick(button) {
+  const handleSendClick = async button => {
     const post = button.closest(".post");
     if (!post) return;
 
@@ -340,107 +436,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const raw = input.value.trim();
     const text = raw.toLowerCase();
-    button.disabled = true;
-    button.textContent = "Prüfe…";
-
-    const aiResult = await moderateWithAI(raw);
-
-    button.disabled = false;
-    button.textContent = "Senden";
-    if (aiResult.level === "strong") {
-      playSound(sounds.block);
-      strikeCount++;
-      updateStrikeDisplay();
-      shake(input);
-
-      showAlertInBox(
-        alertBox,
-        "Stopp! Gewaltvolle Sprache (KI erkannt).",
-        true,
-        section,
-        raw,
-        60,
-        "strong"
-      );
-
-      disableTemporarily(button, input, 60000);
-      checkForLock();
-      input.value = "";
-      return;
-    }
-
-
-    if (aiResult.level === "medium") {
-      strikeCount++;
-      playSound(sounds.block);
-      updateStrikeDisplay();
-      showAlertInBox(alertBox, "Bitte respektvoll bleiben (KI erkannt).", true, section, raw, 20, "medium");
-      disableTemporarily(button, input, 20000);
-      checkForLock();
-      input.value = "";
-      return;
-    }
-
-    if (aiResult.level === "soft") {
-      playSound(sounds.block);
-      showAlertInBox(alertBox, "Willst du das wirklich so sagen?", true, section, raw, 0, "soft");
-      disableTemporarily(button, input, 2500);
-      return;
-    }
-
-
 
     if (!raw) return;
 
     if (isLocked) {
-      shake(input);
+      animate(input, animations.shake);
       showAlertInBox(alertBox, "Dein Konto ist gesperrt.", false);
       return;
     }
 
-    // STRONG
-    if (matchesAny(strongWords, text)) {
-      strikeCount++;
-      updateStrikeDisplay();
-      shake(input);
-      showAlertInBox(alertBox, "Stopp! Gewaltvolle Sprache.", true, section, raw, 60, "strong");
-      disableTemporarily(button, input, 60000);
-      checkForLock();
-      return;
-    }
+    const blocked = await handleModeration(raw, text, button, input, alertBox, section, comments);
+    if (blocked) return;
 
-    // MEDIUM
-    if (matchesAny(mediumWords, text)) {
-      strikeCount++;
-      updateStrikeDisplay();
-      showAlertInBox(alertBox, "Bitte respektvoll bleiben.", true, section, raw, 20, "medium");
-      disableTemporarily(button, input, 20000);
-      checkForLock();
-      return;
-    }
-
-    // SOFT
-    if (matchesAny(hateWords, text)) {
-      showAlertInBox(alertBox, "Willst du das wirklich so sagen?", true, section, raw, 0, "soft");
-      disableTemporarily(button, input, 2500);
-      return;
-    }
-
-    // NEUTRAL COMMENT
+    // Post comment
     const p = document.createElement("p");
     p.innerHTML = `<strong>Du:</strong> ${escapeHtml(raw)}`;
     comments.appendChild(p);
-
-    p.animate(
-      [
-        { opacity: 0, transform: "translateY(6px)" },
-        { opacity: 1, transform: "translateY(0)" }
-      ],
-      { duration: 240, easing: "ease-out" }
-    );
-
+    animate(p, animations.fadeInUp, 240);
     input.value = "";
-  }
+  };
 
   // ===============================
   // LIKE BUTTONS
@@ -448,259 +462,125 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".like-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const icon = btn.querySelector("i");
-      // toggle font-awesome classes if present
+      const post = btn.closest(".post");
+      const numEl = post?.querySelector(".likes-number");
+
+      let isLiked = false;
+
       if (icon) {
         if (icon.classList.contains("fa-regular")) {
           icon.classList.remove("fa-regular");
-          icon.classList.add("fa-solid");
-          icon.classList.add("liked");
+          icon.classList.add("fa-solid", "liked");
+          isLiked = true;
         } else {
-          icon.classList.remove("fa-solid");
-          icon.classList.remove("liked");
+          icon.classList.remove("fa-solid", "liked");
           icon.classList.add("fa-regular");
         }
       } else {
         btn.classList.toggle("liked");
+        isLiked = btn.classList.contains("liked");
       }
 
-      btn.animate(
-        [
-          { transform: "scale(1)" },
-          { transform: "scale(1.25)" },
-          { transform: "scale(1)" }
-        ],
-        { duration: 260, easing: "ease-out" }
-      );
+      animate(btn, animations.pulse, 260);
 
-      // if likes number on post exists, increment/decrement
-      const post = btn.closest(".post");
-      if (post) {
-        const numEl = post.querySelector(".likes-number");
-        if (numEl) {
-          let val = parseInt(numEl.textContent || "0", 10);
-          if (btn.classList.contains("liked") || (icon && icon.classList.contains("liked"))) val = val + 1;
-          else val = Math.max(0, val - 1);
-          numEl.textContent = val;
-        }
+      if (numEl) {
+        let val = parseInt(numEl.textContent || "0", 10);
+        numEl.textContent = isLiked ? val + 1 : Math.max(0, val - 1);
       }
     });
   });
 
-
   // ===============================
-  // EVENT BINDINGS
+  // COMMENT BUTTONS
   // ===============================
-  document.querySelectorAll(".send-btn")
-    .forEach(btn => btn.addEventListener("click", () => handleSendClick(btn)));
-
-  document.querySelectorAll(".like-btn")
-    .forEach(btn => btn.addEventListener("click", () => {
-      btn.classList.toggle("liked");
-      btn.animate(
-        [
-          { transform: "scale(1)" },
-          { transform: "scale(1.25)" },
-          { transform: "scale(1)" }
-        ],
-        { duration: 260, easing: "ease-out" }
-      );
-    }));
-
-  if (closeResourceBtn) {
-    closeResourceBtn.onclick = () => toggleModal(resourceModal, false);
-  }
-
-  if (resetStrikesBtn) {
-    resetStrikesBtn.onclick = () => {
-      strikeCount = 0;
-      isLocked = false;
-      updateStrikeDisplay();
-      toggleLockOverlay(false);
-      document.querySelectorAll("input, button").forEach(el => el.disabled = false);
-    };
-  }
   document.querySelectorAll(".comment-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const post = btn.closest(".post");
       const commentSection = post.querySelector(".comment-section");
-
-      // Toggle visibility
       commentSection.classList.toggle("hidden");
 
-      // Fokus direkt ins Inputfeld
       if (!commentSection.classList.contains("hidden")) {
         commentSection.querySelector(".comment-input").focus();
       }
     });
   });
 
+  // ===============================
+  // SEND BUTTONS
+  // ===============================
+  document.querySelectorAll(".send-btn")
+    .forEach(btn => btn.addEventListener("click", () => handleSendClick(btn)));
 
   // ===============================
-  // SHARE OVERLAY (FINAL)
+  // MODAL CONTROLS
   // ===============================
-  const shareOverlay = document.getElementById("share-overlay");
-  const closeShareBtn = document.getElementById("close-share");
-  const sendShareBtn = document.getElementById("send-share");
-  const shareMessageInput = document.getElementById("share-message");
-  const shareAlert = document.getElementById("share-alert");
+  dom.closeResourceBtn?.addEventListener("click", () => toggleModal(dom.resourceModal, false));
 
+  dom.resetStrikesBtn?.addEventListener("click", () => {
+    location.reload();
+  });
+
+  // ===============================
+  // SHARE OVERLAY
+  // ===============================
   let selectedShareUser = null;
 
-  // -------------------------------
-  // USER SELECTION
-  // -------------------------------
   document.querySelectorAll(".share-user").forEach(user => {
     user.addEventListener("click", () => {
-      document.querySelectorAll(".share-user")
-        .forEach(u => u.classList.remove("selected"));
-
+      document.querySelectorAll(".share-user").forEach(u => u.classList.remove("selected"));
       user.classList.add("selected");
       selectedShareUser = user.dataset.user;
     });
   });
 
-  // -------------------------------
-  // OPEN OVERLAY
-  // -------------------------------
   document.querySelectorAll(".share-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      toggleModal(shareOverlay, true);
-
-      shareMessageInput.value = "";
-      shareAlert.style.display = "none";
+      toggleModal(dom.shareOverlay, true);
+      dom.shareMessageInput.value = "";
+      dom.shareAlert.style.display = "none";
       selectedShareUser = null;
-
-      document.querySelectorAll(".share-user")
-        .forEach(u => u.classList.remove("selected"));
-
-      shareMessageInput.focus();
+      document.querySelectorAll(".share-user").forEach(u => u.classList.remove("selected"));
+      dom.shareMessageInput.focus();
     });
   });
 
-  // -------------------------------
-  // CLOSE OVERLAY
-  // -------------------------------
-  closeShareBtn.addEventListener("click", () => {
-    toggleModal(shareOverlay, false);
+  dom.closeShareBtn?.addEventListener("click", () => toggleModal(dom.shareOverlay, false));
+
+  dom.shareOverlay?.addEventListener("click", e => {
+    if (e.target === dom.shareOverlay) toggleModal(dom.shareOverlay, false);
   });
 
-  shareOverlay.addEventListener("click", e => {
-    if (e.target === shareOverlay) {
-      toggleModal(shareOverlay, false);
-    }
-  });
+  dom.sendShareBtn?.addEventListener("click", async () => {
+    const raw = dom.shareMessageInput.value.trim();
 
-  // -------------------------------
-  // SEND MESSAGE
-  // -------------------------------
-  sendShareBtn.addEventListener("click", async () => {
-    const raw = shareMessageInput.value.trim();
     if (!raw) {
-      showAlertInBox(
-        shareAlert,
-        "Bitte gib eine Nachricht ein.",
-        false
-      );
-      shareAlert.style.display = "block";
+      showAlertInBox(dom.shareAlert, "Bitte gib eine Nachricht ein.", false);
+      dom.shareAlert.style.display = "block";
       return;
     }
 
     if (!selectedShareUser) {
-      showAlertInBox(
-        shareAlert,
-        "Bitte wähle einen Empfänger aus.",
-        false
-      );
-      shareAlert.style.display = "block";
+      showAlertInBox(dom.shareAlert, "Bitte wähle einen Empfänger aus.", false);
+      dom.shareAlert.style.display = "block";
       return;
     }
 
+    const text = raw.toLowerCase();
+    const blocked = await handleModeration(raw, text, dom.sendShareBtn, dom.shareMessageInput, dom.shareAlert, null, null);
 
-    sendShareBtn.disabled = true;
-    sendShareBtn.textContent = "Prüfe…";
-
-    const aiResult = await moderateWithAI(raw);
-
-    sendShareBtn.disabled = false;
-    sendShareBtn.textContent = "Senden";
-
-    shareAlert.style.display = "block";
-
-    // STRONG
-    if (aiResult.level === "strong") {
-      strikeCount++;
-      updateStrikeDisplay();
-      shake(shareMessageInput);
-      playSound(sounds.block);
-      showAlertInBox(
-        shareAlert,
-        "Stopp! Gewaltvolle Sprache (KI erkannt).",
-        true,
-        null,
-        raw,
-        60,
-        "strong"
-      );
-
-      shareMessageInput.value = "";
-      disableTemporarily(sendShareBtn, shareMessageInput, 60000);
-      checkForLock("strong");
+    if (blocked) {
+      dom.shareAlert.style.display = "block";
       return;
     }
 
-    // MEDIUM
-    if (aiResult.level === "medium") {
-      strikeCount++;
-      updateStrikeDisplay();
-
-      showAlertInBox(
-        shareAlert,
-        "Diese Nachricht ist respektlos (KI erkannt).",
-        true,
-        null,
-        raw,
-        20,
-        "medium"
-      );
-
-      shareMessageInput.value = "";
-      disableTemporarily(sendShareBtn, shareMessageInput, 20000);
-      checkForLock("medium");
-      return;
-    }
-
-    // SOFT
-    if (aiResult.level === "soft") {
-      showAlertInBox(
-        shareAlert,
-        "Willst du das wirklich so senden?",
-        true,
-        null,
-        raw,
-        0,
-        "soft"
-      );
-      disableTemporarily(sendShareBtn, shareMessageInput, 2500);
-      return;
-    }
-
-    // OK
-    showAlertInBox(
-      shareAlert,
-      `Nachricht an @${selectedShareUser} gesendet ✔`,
-      false
-    );
-
-    shareMessageInput.value = "";
+    showAlertInBox(dom.shareAlert, `Nachricht an @${selectedShareUser} gesendet ✔`, false);
+    dom.shareMessageInput.value = "";
 
     setTimeout(() => {
-      toggleModal(shareOverlay, false);
-      shareAlert.style.display = "none";
+      toggleModal(dom.shareOverlay, false);
+      dom.shareAlert.style.display = "none";
     }, 1200);
   });
-
-
-
 
   updateStrikeDisplay();
 });
