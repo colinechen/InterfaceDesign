@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ===============================
-  // UTILITIES
+  // UTILITIES (ERWEITERT)
   // ===============================
   const escapeHtml = text => text
     .replaceAll("&", "&amp;")
@@ -10,6 +10,38 @@ document.addEventListener("DOMContentLoaded", () => {
     .replaceAll("'", "&#039;");
 
   const matchesAny = (list, text) => list.some(w => text.includes(w));
+
+  // ===============================
+  // TEXT NORMALISIERUNG
+  // ===============================
+  const normalizeForModeration = text => {
+    return text
+      .toLowerCase()
+      .trim()
+      // Reduziere wiederholte Zeichen auf 2 (HUUUU → HU, damit Wörter lesbar bleiben)
+      .replace(/(.)\1{2,}/g, '$1$1')
+      // Entferne übermäßige Satzzeichen
+      .replace(/[!?]{3,}/g, '!!')
+      .replace(/\.{3,}/g, '..');
+  };
+
+  const normalizeForWordlist = text => {
+    return text
+      .toLowerCase()
+      .trim()
+      // Für Wortlisten: Reduziere auf 1 Zeichen
+      .replace(/(.)\1+/g, '$1')
+      .replace(/[\s_\-]/g, '')
+      .replace(/[^a-zäöüß]/g, '');
+  };
+
+  const matchesAnyNormalized = (list, text) => {
+    const normalized = normalizeText(text);
+    return list.some(word => {
+      const normalizedWord = normalizeText(word);
+      return normalized.includes(normalizedWord);
+    });
+  };
 
   // ===============================
   // CONSTANTS
@@ -276,10 +308,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const controller = new AbortController();
       setTimeout(() => controller.abort(), 6000);
 
+      // Normalisiere für bessere KI-Erkennung, aber nicht zu stark
+      const normalizedForAI = normalizeForModeration(text);
+
+      console.log("Original:", text);
+      console.log("Für KI normalisiert:", normalizedForAI);
+
       const res = await fetch(MODERATION_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text: normalizedForAI }), // ✅ Normalisiert an KI senden
         signal: controller.signal
       });
 
@@ -289,7 +327,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = data.results?.[0];
 
       console.groupCollapsed("KI Moderationsergebnis");
-      console.log("Eingabe:", text);
+      console.log("Eingabe (original):", text);
+      console.log("Eingabe (normalisiert):", normalizedForAI);
       console.log("Kategorien:", result?.categories);
       console.log("Flags:", result?.flagged);
       console.groupEnd();
@@ -297,8 +336,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!result) return { level: "none" };
 
       const c = result.categories;
-
-      // WICHTIG: Triggerte Kategorien speichern
       const triggeredCategories = Object.keys(c).filter(key => c[key]);
 
       if (c.violence || c.threat || c.self_harm) {
@@ -320,12 +357,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ===============================
-  // MODERATION HANDLER (FIXES)
+  // MODERATION HANDLER (AKTUALISIERT)
   // ===============================
   const handleModeration = async (raw, text, button, input, alertBox, section, comments) => {
     button.disabled = true;
     button.textContent = "Prüfe…";
 
+    // KI bekommt leicht normalisierten Text für bessere Erkennung
     const aiResult = await moderateWithAI(raw);
 
     button.disabled = false;
@@ -333,7 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // AI Moderation - STRONG
     if (aiResult.level === "strong") {
-      playSound(sounds.block); // ✅ Sound hinzugefügt
+      playSound(sounds.block);
       strikeCount++;
       updateStrikeDisplay();
       animate(input, animations.shake);
@@ -345,18 +383,17 @@ document.addEventListener("DOMContentLoaded", () => {
         raw,
         60,
         "strong",
-        aiResult.triggeredCategories // ✅ Kategorien übergeben
+        aiResult.triggeredCategories
       );
       disableTemporarily(button, input, TIMEOUT_DURATIONS.strong);
       checkForLock();
-      input.value = ""; // ✅ Input leeren
+      input.value = "";
       return true;
     }
 
-    // AI Moderation - MEDIUM
     if (aiResult.level === "medium") {
-      strikeCount++;
       playSound(sounds.block);
+      strikeCount++;
       updateStrikeDisplay();
       showAlertInBox(
         alertBox,
@@ -366,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
         raw,
         20,
         "medium",
-        aiResult.triggeredCategories // ✅ Kategorien übergeben
+        aiResult.triggeredCategories
       );
       disableTemporarily(button, input, TIMEOUT_DURATIONS.medium);
       checkForLock();
@@ -374,7 +411,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return true;
     }
 
-    // AI Moderation - SOFT
     if (aiResult.level === "soft") {
       playSound(sounds.block);
       showAlertInBox(
@@ -385,35 +421,40 @@ document.addEventListener("DOMContentLoaded", () => {
         raw,
         0,
         "soft",
-        aiResult.triggeredCategories // ✅ Kategorien übergeben
+        aiResult.triggeredCategories
       );
       disableTemporarily(button, input, TIMEOUT_DURATIONS.soft);
       return true;
     }
 
-    // Fallback to local wordlists
-    if (matchesAny(STRONG_WORDS, text)) {
+    // Fallback mit starker Normalisierung für Wortlisten
+    const normalizedForWordlist = normalizeForWordlist(text);
+
+    if (STRONG_WORDS.some(word => normalizedForWordlist.includes(normalizeForWordlist(word)))) {
+      playSound(sounds.block);
       strikeCount++;
       updateStrikeDisplay();
       animate(input, animations.shake);
       showAlertInBox(alertBox, "Stopp! Gewaltvolle Sprache.", true, section, raw, 60, "strong");
       disableTemporarily(button, input, TIMEOUT_DURATIONS.strong);
       checkForLock();
-      input.value = ""; // ✅ Auch hier leeren
+      input.value = "";
       return true;
     }
 
-    if (matchesAny(MEDIUM_WORDS, text)) {
+    if (MEDIUM_WORDS.some(word => normalizedForWordlist.includes(normalizeForWordlist(word)))) {
+      playSound(sounds.block);
       strikeCount++;
       updateStrikeDisplay();
       showAlertInBox(alertBox, "Bitte respektvoll bleiben.", true, section, raw, 20, "medium");
       disableTemporarily(button, input, TIMEOUT_DURATIONS.medium);
       checkForLock();
-      input.value = ""; // ✅ Auch hier leeren
+      input.value = "";
       return true;
     }
 
-    if (matchesAny(HATE_WORDS, text)) {
+    if (HATE_WORDS.some(word => normalizedForWordlist.includes(normalizeForWordlist(word)))) {
+      playSound(sounds.block);
       showAlertInBox(alertBox, "Willst du das wirklich so sagen?", true, section, raw, 0, "soft");
       disableTemporarily(button, input, TIMEOUT_DURATIONS.soft);
       return true;
